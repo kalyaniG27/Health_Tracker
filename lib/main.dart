@@ -10,8 +10,11 @@ import 'pages/insights.dart';
 import 'theme/app_theme.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(
     ChangeNotifierProvider(
+      // We initialize DataManager without a user initially.
+      // AuthGate will update it once the auth state is known.
       create: (context) => DataManager(),
       child: const HealthEcoTracker(),
     ),
@@ -23,11 +26,15 @@ class HealthEcoTracker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Listen to the DataManager to get the theme mode preference.
+    final settings = context.watch<DataManager>().appSettings;
+    final isDarkMode = settings['darkMode'] ?? false;
+
     return MaterialApp(
       title: 'Health & Eco Tracker',
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system, // Or control with a setting
+      themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
       home: const MainNavigation(),
       debugShowCheckedModeBanner: false,
     );

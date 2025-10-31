@@ -1,160 +1,81 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/foundation.dart';
 import '../models/food_entry.dart';
 import '../models/exercise_entry.dart';
 import '../models/activity_entry.dart';
 import '../models/user_profile.dart';
 
 class LocalStorage {
-  static const String _foodEntriesKey = 'food_entries';
-  static const String _exerciseEntriesKey = 'exercise_entries';
-  static const String _activityEntriesKey = 'activity_entries';
-  static const String _userProfileKey = 'user_profile';
-  static const String _appSettingsKey = 'app_settings';
+  static const _foodKey = 'food_entries';
+  static const _exerciseKey = 'exercise_entries';
+  static const _activityKey = 'activity_entries';
+  static const _profileKey = 'user_profile';
+  static const _settingsKey = 'app_settings';
 
-  // Food Entries
-  static Future<void> saveFoodEntries(List<FoodEntry> entries) async {
+  static Future<void> _saveList(String key, List<dynamic> list) async {
     final prefs = await SharedPreferences.getInstance();
-    final entriesJson = entries.map((entry) => entry.toJson()).toList();
-    await prefs.setString(_foodEntriesKey, json.encode(entriesJson));
+    final stringList = list.map((item) => json.encode(item.toJson())).toList();
+    await prefs.setStringList(key, stringList);
   }
 
-  static Future<List<FoodEntry>> getFoodEntries() async {
+  static Future<List<T>> _getList<T>(
+      String key, T Function(Map<String, dynamic>) fromJson) async {
     final prefs = await SharedPreferences.getInstance();
-    final entriesJson = prefs.getString(_foodEntriesKey);
-
-    if (entriesJson == null) return [];
-
-    try {
-      final List<dynamic> decoded = json.decode(entriesJson);
-      return decoded.map((json) => FoodEntry.fromJson(json)).toList();
-    } catch (e) {
-      debugPrint('Error loading food entries: $e');
-      return [];
-    }
+    final stringList = prefs.getStringList(key) ?? [];
+    return stringList
+        .map((item) => fromJson(json.decode(item)))
+        .toList()
+        .cast<T>();
   }
 
-  // Exercise Entries
-  static Future<void> saveExerciseEntries(List<ExerciseEntry> entries) async {
-    final prefs = await SharedPreferences.getInstance();
-    final entriesJson = entries.map((entry) => entry.toJson()).toList();
-    await prefs.setString(_exerciseEntriesKey, json.encode(entriesJson));
-  }
+  // Food
+  static Future<void> saveFoodEntries(List<FoodEntry> entries) =>
+      _saveList(_foodKey, entries);
+  static Future<List<FoodEntry>> getFoodEntries() =>
+      _getList(_foodKey, (json) => FoodEntry.fromJson(json));
 
-  static Future<List<ExerciseEntry>> getExerciseEntries() async {
-    final prefs = await SharedPreferences.getInstance();
-    final entriesJson = prefs.getString(_exerciseEntriesKey);
+  // Exercise
+  static Future<void> saveExerciseEntries(List<ExerciseEntry> entries) =>
+      _saveList(_exerciseKey, entries);
+  static Future<List<ExerciseEntry>> getExerciseEntries() =>
+      _getList(_exerciseKey, (json) => ExerciseEntry.fromJson(json));
 
-    if (entriesJson == null) return [];
-
-    try {
-      final List<dynamic> decoded = json.decode(entriesJson);
-      return decoded.map((json) => ExerciseEntry.fromJson(json)).toList();
-    } catch (e) {
-      debugPrint('Error loading exercise entries: $e');
-      return [];
-    }
-  }
-
-  // Activity Entries
-  static Future<void> saveActivityEntries(List<ActivityEntry> entries) async {
-    final prefs = await SharedPreferences.getInstance();
-    final entriesJson = entries.map((entry) => entry.toJson()).toList();
-    await prefs.setString(_activityEntriesKey, json.encode(entriesJson));
-  }
-
-  static Future<List<ActivityEntry>> getActivityEntries() async {
-    final prefs = await SharedPreferences.getInstance();
-    final entriesJson = prefs.getString(_activityEntriesKey);
-
-    if (entriesJson == null) return [];
-
-    try {
-      final List<dynamic> decoded = json.decode(entriesJson);
-      return decoded.map((json) => ActivityEntry.fromJson(json)).toList();
-    } catch (e) {
-      debugPrint('Error loading activity entries: $e');
-      return [];
-    }
-  }
+  // Activity
+  static Future<void> saveActivityEntries(List<ActivityEntry> entries) =>
+      _saveList(_activityKey, entries);
+  static Future<List<ActivityEntry>> getActivityEntries() =>
+      _getList(_activityKey, (json) => ActivityEntry.fromJson(json));
 
   // User Profile
   static Future<void> saveUserProfile(UserProfile profile) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_userProfileKey, json.encode(profile.toJson()));
+    await prefs.setString(_profileKey, json.encode(profile.toJson()));
   }
 
-  static Future<UserProfile?> getUserProfile() async {
+  static Future<UserProfile> getUserProfile() async {
     final prefs = await SharedPreferences.getInstance();
-    final profileJson = prefs.getString(_userProfileKey);
-
-    if (profileJson == null) return null;
-
-    try {
-      final Map<String, dynamic> decoded = json.decode(profileJson);
-      return UserProfile.fromJson(decoded);
-    } catch (e) {
-      debugPrint('Error loading user profile: $e');
-      return null;
+    final jsonString = prefs.getString(_profileKey);
+    if (jsonString != null) {
+      return UserProfile.fromJson(json.decode(jsonString));
     }
+    // Return a default profile if none exists
+    return UserProfile.createNew(
+        name: 'User', weight: 70, height: 170, age: 25, gender: 'other');
   }
 
   // App Settings
   static Future<void> saveAppSettings(Map<String, dynamic> settings) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_appSettingsKey, json.encode(settings));
+    await prefs.setString(_settingsKey, json.encode(settings));
   }
 
   static Future<Map<String, dynamic>> getAppSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    final settingsJson = prefs.getString(_appSettingsKey);
-
-    if (settingsJson == null) {
-      return {
-        'notifications': true,
-        'darkMode': false,
-        'healthSync': true,
-        'ecoData': true,
-      };
+    final jsonString = prefs.getString(_settingsKey);
+    if (jsonString != null) {
+      return json.decode(jsonString);
     }
-
-    try {
-      final Map<String, dynamic> decoded = json.decode(settingsJson);
-      return decoded;
-    } catch (e) {
-      debugPrint('Error loading app settings: $e');
-      return {
-        'notifications': true,
-        'darkMode': false,
-        'healthSync': true,
-        'ecoData': true,
-      };
-    }
-  }
-
-  // Clear all data (for testing/reset)
-  static Future<void> clearAllData() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_foodEntriesKey);
-    await prefs.remove(_exerciseEntriesKey);
-    await prefs.remove(_activityEntriesKey);
-    await prefs.remove(_userProfileKey);
-    await prefs.remove(_appSettingsKey);
-  }
-
-  // Get storage statistics
-  static Future<Map<String, int>> getStorageStats() async {
-    final foodEntries = await getFoodEntries();
-    final exerciseEntries = await getExerciseEntries();
-    final activityEntries = await getActivityEntries();
-
-    return {
-      'foodEntries': foodEntries.length,
-      'exerciseEntries': exerciseEntries.length,
-      'activityEntries': activityEntries.length,
-      'totalEntries':
-          foodEntries.length + exerciseEntries.length + activityEntries.length,
-    };
+    // Return default settings if none exist
+    return {'darkMode': false, 'notifications': true};
   }
 }

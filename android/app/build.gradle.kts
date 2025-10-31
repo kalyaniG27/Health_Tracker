@@ -9,6 +9,7 @@ android {
     namespace = "com.example.health_tracker_app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
+    ndkVersion = "25.2.9519653" // Or another version you have installed
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11

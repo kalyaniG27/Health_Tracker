@@ -5,6 +5,7 @@ class ActivityEntry implements LogEntry {
   final String description;
   final double distance;
   final double co2Saved;
+  @override
   final DateTime time;
   final String transportMode;
   final String purpose;
@@ -37,10 +38,21 @@ class ActivityEntry implements LogEntry {
       description: json['description'] ?? '',
       distance: (json['distance'] ?? 0).toDouble(),
       co2Saved: (json['co2Saved'] ?? 0).toDouble(),
-      time: DateTime.parse(json['time']),
+      time: _parseDate(json['time']),
       transportMode: json['transportMode'] ?? 'walking',
       purpose: json['purpose'] ?? 'other',
     );
+  }
+
+  static DateTime _parseDate(dynamic dateString) {
+    if (dateString == null || dateString.toString().isEmpty) {
+      return DateTime.now();
+    }
+    try {
+      return DateTime.parse(dateString.toString());
+    } catch (e) {
+      return DateTime.now();
+    }
   }
 
   ActivityEntry copyWith({

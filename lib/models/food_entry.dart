@@ -4,6 +4,7 @@ class FoodEntry implements LogEntry {
   final String id;
   final String description;
   final int calories;
+  @override
   final DateTime time;
   final String mealType;
 
@@ -30,9 +31,20 @@ class FoodEntry implements LogEntry {
       id: json['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
       description: json['description'] ?? '',
       calories: json['calories'] ?? 0,
-      time: DateTime.parse(json['time']),
+      time: _parseDate(json['time']),
       mealType: json['mealType'] ?? 'other',
     );
+  }
+
+  static DateTime _parseDate(dynamic dateString) {
+    if (dateString == null || dateString.toString().isEmpty) {
+      return DateTime.now();
+    }
+    try {
+      return DateTime.parse(dateString.toString());
+    } catch (e) {
+      return DateTime.now();
+    }
   }
 
   FoodEntry copyWith({

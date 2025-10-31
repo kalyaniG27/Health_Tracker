@@ -4,6 +4,7 @@ class ExerciseEntry implements LogEntry {
   final String id;
   final String description;
   final int caloriesBurned;
+  @override
   final DateTime time;
   final int duration;
   final String intensity;
@@ -33,10 +34,21 @@ class ExerciseEntry implements LogEntry {
       id: json['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
       description: json['description'] ?? '',
       caloriesBurned: json['caloriesBurned'] ?? 0,
-      time: DateTime.parse(json['time']),
+      time: _parseDate(json['time']),
       duration: json['duration'] ?? 30,
       intensity: json['intensity'] ?? 'moderate',
     );
+  }
+
+  static DateTime _parseDate(dynamic dateString) {
+    if (dateString == null || dateString.toString().isEmpty) {
+      return DateTime.now();
+    }
+    try {
+      return DateTime.parse(dateString.toString());
+    } catch (e) {
+      return DateTime.now();
+    }
   }
 
   ExerciseEntry copyWith({

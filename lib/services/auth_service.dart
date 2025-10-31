@@ -1,45 +1,62 @@
-import '../models/user.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
+import 'package:health_tracker_app/models/user_profile.dart';
 
 class AuthService {
-  static Future<bool> signUp(String email, String password, String name) async {
-    // Simulate sign-up process
-    await Future.delayed(Duration(seconds: 1)); // Simulate network delay
+  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
 
-    // In a real app, you would check if the email already exists in your database
-    // For this example, we'll just return true if the email is not 'existing@email.com'
-    if (email == 'existing@email.com') {
-      return false; // Simulate email already exists
+  // Stream to listen to authentication state changes
+  Stream<User?> get authStateChanges => _firebaseAuth.authStateChanges();
+
+  // Get current user
+  User? get currentUser => _firebaseAuth.currentUser;
+
+  // Sign in with email and password
+  Future<UserCredential?> signInWithEmailAndPassword(
+      String email, String password) async {
+    try {
+      return await _firebaseAuth.signInWithEmailAndPassword(
+          email: email, password: password);
+    } on FirebaseAuthException catch (e) {
+      // Handle errors like user-not-found, wrong-password, etc.
+      debugPrint(e.message);
+      return null;
     }
-
-    return true; // Simulate successful sign-up
   }
 
-  static Future<User?> getCurrentUser() async {
-    // Simulate fetching the current user
-    await Future.delayed(Duration(milliseconds: 500)); // Simulate network delay
+  // Sign up with email and password
+  Future<UserCredential?> signUpWithEmailAndPassword(
+      String email, String password) async {
+    try {
+      UserCredential userCredential = await _firebaseAuth
+          .createUserWithEmailAndPassword(email: email, password: password);
 
-    // For this example, we'll return a mock user
-    return User(
-      id: '123',
-      email: 'test@example.com',
-      name: 'Test User',
-    );
+      // After creating the user, create a new document for them in Firestore
+      await _createUserDocument(userCredential.user);
+
+      return userCredential;
+    } on FirebaseAuthException catch (e) {
+      // Handle errors like email-already-in-use, weak-password, etc.
+      debugPrint(e.message);
+      return null;
+    }
   }
 
-  static Future<bool> signIn(String email, String password) async {
-    // Simulate sign-in process
-    await Future.delayed(Duration(seconds: 1)); // Simulate network delay
+  // Create a user document in Firestore
+  Future<void> _createUserDocument(User? user) async {
+    if (user == null) return;
 
-    // In a real app, you would authenticate the user against your database
-    // For this example, we'll just return true for any email/password
-    return true; // Simulate successful sign-in
+    final userProfile = UserProfile.createNew(
+        name: 'New User', weight: 70, height: 170, age: 25, gender: 'other');
+
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .set(userProfile.toJson());
   }
 
-  static Future<void> signOut() async {
-    // Simulate sign-out process
-    await Future.delayed(Duration(milliseconds: 500)); // Simulate network delay
-
-    // In a real app, you would clear any stored user data
-    print('User signed out');
+  // Sign out
+  Future<void> signOut() async {
+    await _firebaseAuth.signOut();
   }
 }

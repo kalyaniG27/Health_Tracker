@@ -76,8 +76,18 @@ class UserProfile {
       age: json['age'] ?? 25,
       gender: json['gender'] ?? 'male',
       goals: Map<String, dynamic>.from(json['goals'] ?? {}),
-      createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
+      createdAt: _parseDate(json['createdAt']),
     );
+  }
+
+  static DateTime _parseDate(dynamic dateString) {
+    if (dateString == null || dateString.toString().isEmpty)
+      return DateTime.now();
+    try {
+      return DateTime.parse(dateString.toString());
+    } catch (e) {
+      return DateTime.now();
+    }
   }
 
   UserProfile copyWith({

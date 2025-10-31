@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import '../models/food_entry.dart';
-import '../models/exercise_entry.dart';
-import '../models/log_entry.dart';
-import '../models/activity_entry.dart';
-import '../models/user_profile.dart';
-import '../services/local_storage.dart';
-import '../services/nlp_processor.dart';
-import '../services/calorie_calculator.dart';
-import '../services/co2_calculator.dart';
+import 'package:health_tracker_app/models/food_entry.dart';
+import 'package:health_tracker_app/models/exercise_entry.dart';
+import 'package:health_tracker_app/models/log_entry.dart';
+import 'package:health_tracker_app/models/activity_entry.dart';
+import 'package:health_tracker_app/models/user_profile.dart';
+import 'package:health_tracker_app/services/local_storage.dart';
+import 'package:health_tracker_app/services/calorie_calculator.dart';
+import 'package:health_tracker_app/services/co2_calculator.dart';
 
 class DataManager extends ChangeNotifier {
   List<FoodEntry> _foodEntries = [];
@@ -43,9 +42,17 @@ class DataManager extends ChangeNotifier {
     notifyListeners();
   }
 
+  // --- Data Refreshing ---
+  Future<void> refreshData() async {
+    await loadAllEntries();
+  }
+
+  Future<void> fetchAllData() async {
+    await loadAllEntries();
+  }
+
   // --- Entry Addition ---
   Future<void> addFoodEntry(String description) async {
-    final processed = NLPProcessor.processFoodInput(description);
     final calories = CalorieCalculator.estimateFoodCalories(description);
 
     final newEntry = FoodEntry(
@@ -53,7 +60,7 @@ class DataManager extends ChangeNotifier {
       description: description,
       calories: calories,
       time: DateTime.now(),
-      mealType: processed['mealType'] ?? 'other',
+      mealType: 'other', // Simplified
     );
 
     _foodEntries.insert(
@@ -63,7 +70,6 @@ class DataManager extends ChangeNotifier {
   }
 
   Future<void> addExerciseEntry(String description) async {
-    final processed = NLPProcessor.processExerciseInput(description);
     final caloriesBurned = CalorieCalculator.estimateExerciseCalories(
       description,
       weight: _userProfile?.weight,
@@ -74,8 +80,8 @@ class DataManager extends ChangeNotifier {
       description: description,
       caloriesBurned: caloriesBurned,
       time: DateTime.now(),
-      duration: processed['duration'] ?? 30,
-      intensity: processed['intensity'] ?? 'moderate',
+      duration: 30, // Simplified
+      intensity: 'moderate', // Simplified
     );
 
     _exerciseEntries.insert(0, newEntry);
@@ -84,11 +90,10 @@ class DataManager extends ChangeNotifier {
   }
 
   Future<void> addActivityEntry(String description) async {
-    final processed = NLPProcessor.processActivityInput(description);
-    final distance = processed['distance'] ?? 1.0;
+    final distance = 1.0; // Simplified
     final co2Saved = CO2Calculator.calculateCO2Saved(
       distance,
-      processed['transportMode'] ?? 'walking',
+      'walking',
     );
 
     final newEntry = ActivityEntry(
@@ -97,11 +102,30 @@ class DataManager extends ChangeNotifier {
       distance: distance,
       co2Saved: co2Saved,
       time: DateTime.now(),
-      transportMode: processed['transportMode'] ?? 'walking',
-      purpose: processed['purpose'] ?? 'other',
+      transportMode: 'walking',
+      purpose: 'other', // Simplified
     );
 
     _activityEntries.insert(0, newEntry);
+    await LocalStorage.saveActivityEntries(_activityEntries);
+    notifyListeners();
+  }
+
+  // --- Entry Deletion ---
+  Future<void> deleteFoodEntry(FoodEntry entry) async {
+    _foodEntries.removeWhere((e) => e.id == entry.id);
+    await LocalStorage.saveFoodEntries(_foodEntries);
+    notifyListeners();
+  }
+
+  Future<void> deleteExerciseEntry(ExerciseEntry entry) async {
+    _exerciseEntries.removeWhere((e) => e.id == entry.id);
+    await LocalStorage.saveExerciseEntries(_exerciseEntries);
+    notifyListeners();
+  }
+
+  Future<void> deleteActivityEntry(ActivityEntry entry) async {
+    _activityEntries.removeWhere((e) => e.id == entry.id);
     await LocalStorage.saveActivityEntries(_activityEntries);
     notifyListeners();
   }
